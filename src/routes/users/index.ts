@@ -12,14 +12,16 @@ const jwt = require('jsonwebtoken');
 router.post('/register', 
   withErrorHandler(async ({ body: { username, email, type, password } }, res) => {
     try {
+      if (await getUserByUsername(username)) throw new Error('user with this username already exists');
+      if (await getUserByEmail(email)) throw new Error('User with this email already exists');
       const validationResult = await userValidationSchema.validateAsync({
         username: username,
         email: email,
         type: type, 
         password: password
       });
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
+      const salt: string = await bcrypt.genSalt(10);
+      const hashedPassword: string = await bcrypt.hash(password, salt);
       
       MEMORY_DB[username] = {
         email: email,
@@ -30,7 +32,7 @@ router.post('/register',
       res.status(200).send();
 
     } catch (error) {
-      if (error.isJoi) res.status(400).send();
+      res.status(400).send(error.message);
     }
   })
 );
